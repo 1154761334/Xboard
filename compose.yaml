@@ -51,5 +51,11 @@ services:
     restart: unless-stopped
     volumes:
       - redis-data:/data
+  sub-fetcher:
+    image: 1154761334/sub-fetcher:latest
+    network_mode: host
+    restart: unless-stopped
+    depends_on:
+      - web
 volumes:
   redis-data:
