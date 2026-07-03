@@ -1,0 +1,82 @@
+# Candidate deployment for oracle-1.
+#
+# This is intentionally separate from compose.current.yaml. Run it from a test
+# directory with copied .env/.docker/.data/plugins/storage assets and bind it to
+# non-production ports before promoting it.
+services:
+  web:
+    image: ghcr.io/cedar2025/xboard:latest
+    restart: unless-stopped
+    depends_on:
+      - redis
+    ports:
+      - "17001:7001"
+    volumes:
+      - redis-data:/data
+      - ./.env:/www/.env
+      - ./.docker/.data/:/www/.docker/.data
+      - ./storage/logs:/www/storage/logs
+      - ./storage/theme:/www/storage/theme
+      - ./plugins:/www/plugins
+    environment:
+      docker: "true"
+      ENABLE_CADDY: "false"
+      ENABLE_HORIZON: "false"
+      ENABLE_WS_SERVER: "false"
+      RESOURCE_PROFILE: "balanced"
+    command: php artisan octane:start --host=0.0.0.0 --port=7001 --workers=2 --max-requests=500
+
+  horizon:
+    image: ghcr.io/cedar2025/xboard:latest
+    restart: unless-stopped
+    depends_on:
+      - redis
+    volumes:
+      - redis-data:/data
+      - ./.env:/www/.env
+      - ./.docker/.data/:/www/.docker/.data
+      - ./storage/logs:/www/storage/logs
+      - ./plugins:/www/plugins
+    environment:
+      docker: "true"
+      ENABLE_CADDY: "false"
+      ENABLE_WEB: "false"
+      ENABLE_WS_SERVER: "false"
+
+  ws-server:
+    image: ghcr.io/cedar2025/xboard:latest
+    restart: unless-stopped
+    depends_on:
+      - redis
+    ports:
+      - "18076:8076"
+    volumes:
+      - redis-data:/data
+      - ./.env:/www/.env
+      - ./.docker/.data/:/www/.docker/.data
+      - ./storage/logs:/www/storage/logs
+      - ./plugins:/www/plugins
+    environment:
+      docker: "true"
+      ENABLE_CADDY: "false"
+      ENABLE_WEB: "false"
+      ENABLE_HORIZON: "false"
+      WS_HOST: "0.0.0.0"
+
+  redis:
+    image: redis:8-alpine
+    restart: unless-stopped
+    command: redis-server --unixsocket /data/redis.sock --unixsocketperm 777 --save 900 1 --save 300 10 --save 60 10000
+    volumes:
+      - redis-data:/data
+
+  sub-fetcher:
+    image: 1154761334/sub-fetcher:latest
+    network_mode: host
+    restart: unless-stopped
+    depends_on:
+      - web
+
+volumes:
+  redis-data:
+
