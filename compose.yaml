@@ -2,7 +2,6 @@ services:
   web:
     image: ghcr.io/cedar2025/xboard:latest
     volumes:
-      - redis-data:/data
       - ./.env:/www/.env
       - ./.docker/.data/:/www/.docker/.data
       - ./storage/logs:/www/storage/logs
@@ -20,7 +19,6 @@ services:
   horizon:
     image: ghcr.io/cedar2025/xboard:latest
     volumes:
-      - redis-data:/data
       - ./.env:/www/.env
       - ./.docker/.data/:/www/.docker/.data
       - ./storage/logs:/www/storage/logs
@@ -33,7 +31,6 @@ services:
   ws-server:
     image: ghcr.io/cedar2025/xboard:latest
     volumes:
-      - redis-data:/data
       - ./.env:/www/.env
       - ./.docker/.data/:/www/.docker/.data
       - ./storage/logs:/www/storage/logs
@@ -47,12 +44,14 @@ services:
       - 8076:8076
   redis:
     image: redis:8-alpine
-    command: redis-server --unixsocket /data/redis.sock --unixsocketperm 777 --save 900 1 --save 300 10 --save 60 10000
+    command: redis-server --save 900 1 --save 300 10 --save 60 10000
     restart: unless-stopped
     volumes:
       - redis-data:/data
   sub-fetcher:
     image: 1154761334/sub-fetcher:latest
+    volumes:
+      - ./sub-fetcher/index.html:/app/public/index.html:ro
     network_mode: host
     restart: unless-stopped
     depends_on:
