@@ -69,6 +69,8 @@ test('launcher has download-first actions and does not ask for an arbitrary URL'
   assert.match(launcher, /try\s*\{\s*await navigator\.clipboard\.writeText\(content\);\s*return;\s*\}\s*catch \(_\)\s*\{[\s\S]*?copyWithExecCommand\(content\)/);
   assert.match(launcher, /function openPanel\(trigger\)[\s\S]*?syncCacheSession\(getAccessToken\(\)\)/);
   assert.match(launcher, /function closePanel\(\)[\s\S]*?\.sf-code[\s\S]*?textContent\s*=\s*['"]['"]/);
+  assert.match(launcher, /actionEpoch|panelEpoch|operationId/);
+  assert.match(launcher, /response = await window\.fetch[\s\S]*?cacheToken !== token[\s\S]*?response\.status/);
   assert.doesNotMatch(launcher, /cacheToken\s*!==\s*token[\s\S]{0,120}return requestConfig\(client\)/);
   assert.doesNotMatch(launcher, /订阅链接.*input|url-input|原始订阅链接/);
 });

@@ -20,6 +20,7 @@
   const pendingRequests = new Map();
   let cacheToken = null;
   let panel;
+  let panelEpoch = 0;
   let retryCount = 0;
   let retryTimer;
 
@@ -27,6 +28,16 @@
     const error = new Error(message);
     error.isSubFetcherUserError = true;
     return error;
+  }
+
+  function staleRequest() {
+    const error = new Error('Stale sub-fetcher request');
+    error.isSubFetcherStaleRequest = true;
+    return error;
+  }
+
+  function invalidatePanelActions() {
+    panelEpoch += 1;
   }
 
   function getAccessToken() {
@@ -50,6 +61,7 @@
       configCache.clear();
       pendingRequests.clear();
       cacheToken = token;
+      invalidatePanelActions();
     }
   }
 
@@ -166,6 +178,10 @@
     toggle.textContent = code.hidden ? '预览配置' : '收起预览';
   }
 
+  function isPanelActionCurrent(operationEpoch) {
+    return panel && !panel.hidden && panelEpoch === operationEpoch;
+  }
+
   async function requestConfig(client) {
     const token = getAccessToken();
     syncCacheSession(token);
@@ -183,6 +199,10 @@
         },
         body: JSON.stringify({ client }),
       });
+      if (cacheToken !== token || getAccessToken() !== token) {
+        syncCacheSession(getAccessToken());
+        throw staleRequest();
+      }
       if (response.status === 401 || response.status === 403) throw userError('登录已失效，请重新登录');
       if (response.status === 404 || response.status === 422) throw userError('暂无可用订阅');
       if (!response.ok) throw userError('配置获取失败，请稍后重试');
@@ -190,7 +210,7 @@
       if (!content) throw userError('暂无可用订阅');
       if (cacheToken !== token || getAccessToken() !== token) {
         syncCacheSession(getAccessToken());
-        throw userError('登录状态已变更，请重新登录后再试');
+        throw staleRequest();
       }
       configCache.set(client, content);
       return content;
@@ -242,16 +262,20 @@
   }
 
   async function runAction(action) {
+    syncCacheSession(getAccessToken());
+    const operationEpoch = panelEpoch;
     setLoading(true);
     setStatus('正在获取配置…');
     try {
       const client = currentClient();
       const content = await requestConfig(client);
+      if (!isPanelActionCurrent(operationEpoch)) return;
       if (action === 'download') {
         downloadConfig(content, client);
         setStatus('配置已开始下载');
       } else if (action === 'copy') {
         await copyConfig(content);
+        if (!isPanelActionCurrent(operationEpoch)) return;
         setStatus('配置已复制');
       } else {
         const code = panel.querySelector('.sf-code');
@@ -260,14 +284,16 @@
         setStatus('配置已就绪');
       }
     } catch (error) {
+      if (!isPanelActionCurrent(operationEpoch) || (error && error.isSubFetcherStaleRequest)) return;
       setStatus(error && error.isSubFetcherUserError ? error.message : '操作失败，请稍后重试');
     } finally {
-      setLoading(false);
+      if (isPanelActionCurrent(operationEpoch)) setLoading(false);
     }
   }
 
   function closePanel() {
     if (!panel) return;
+    invalidatePanelActions();
     const code = panel.querySelector('.sf-code');
     code.textContent = '';
     code.hidden = true;
