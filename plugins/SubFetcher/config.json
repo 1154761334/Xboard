@@ -1,0 +1,17 @@
+{
+    "name": "Sub Fetcher",
+    "code": "sub_fetcher",
+    "type": "feature",
+    "version": "1.0.0",
+    "description": "Secure client configuration downloads for authenticated users.",
+    "author": "XBoard Team",
+    "require": {
+        "xboard": ">=1.0.0"
+    },
+    "clients": [
+        "clash",
+        "v2ray",
+        "singbox",
+        "surge"
+    ]
+}
