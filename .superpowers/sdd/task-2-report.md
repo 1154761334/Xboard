@@ -107,3 +107,30 @@ Completed. Closing the secure-download panel now clears and hides the preview, r
 ### Concerns
 
 - Production deployment and authenticated browser verification remain outside this remediation scope.
+
+## Final Race Remediation
+
+### Status
+
+Completed. Closing the panel or changing the access-token session advances a panel epoch, so an older action cannot update status, loading controls, downloads, clipboard state, or preview content after it resumes. Stale responses are checked immediately after `fetch` resolves, before any HTTP status is interpreted, and again before body content is cached; both paths are discarded silently.
+
+### Commit
+
+`84bc6eee2d64544237ef0eac8454530262157b4c` (`fix: guard sub-fetcher panel races`)
+
+### Changed Files
+
+- `plugins/SubFetcher/resources/assets/sub-fetcher.js`
+- `tests/contract/sub-fetcher-contract.test.mjs`
+
+### Tests and Verification
+
+- Red: `node --test tests/contract/sub-fetcher-contract.test.mjs` failed with the new epoch assertion before the fix.
+- Green: `node --test tests/contract/sub-fetcher-contract.test.mjs` passed (6/6).
+- `node --check plugins/SubFetcher/resources/assets/sub-fetcher.js` passed.
+- `docker compose config --quiet` passed.
+- `git diff --check` passed.
+
+### Concerns
+
+- Production deployment and authenticated browser verification remain outside this remediation scope.
