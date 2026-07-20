@@ -54,3 +54,29 @@ Completed. In-memory configuration and in-flight requests are now invalidated wh
 ### Concerns
 
 - Production deployment and authenticated browser verification remain outside this review-fix scope.
+
+## Control-Flow Remediation
+
+### Status
+
+Completed. A response received after the access token changes is discarded. The launcher refreshes its token-scoped in-memory state and returns a user-facing re-login message instead of recursively re-entering `requestConfig` while its prior request is still pending.
+
+### Commit
+
+`5ddb5518a4723938c7a7cccb2d4bfa80f33ab82c` (`fix: reject stale sub-fetcher session response`)
+
+### Changed Files
+
+- `plugins/SubFetcher/resources/assets/sub-fetcher.js`
+- `tests/contract/sub-fetcher-contract.test.mjs`
+
+### Tests and Verification
+
+- `node --test tests/contract/sub-fetcher-contract.test.mjs` passed (6/6).
+- `node --check plugins/SubFetcher/resources/assets/sub-fetcher.js` passed.
+- `docker compose config --quiet` passed.
+- `git diff --check` passed.
+
+### Concerns
+
+- A user whose token changes during a request must intentionally retry after re-authenticating; stale configuration is never returned or reused.
