@@ -3,8 +3,10 @@
 namespace Plugin\SubFetcher\Controllers;
 
 use App\Http\Controllers\V1\Client\ClientController;
+use App\Services\Plugin\InterceptResponseException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\Response as HttpResponse;
@@ -37,17 +39,22 @@ class SubFetcherController
 
     public function download(Request $request): HttpResponse
     {
-        $this->rejectUnexpectedFields($request);
+        $this->rejectNonJsonInputs($request);
 
-        $validated = $request->validate([
+        $body = $request->json()->all();
+        $this->rejectUnexpectedFields($body);
+
+        $validated = Validator::make($request->json()->all(), [
             'client' => ['required', 'string', Rule::in(array_keys(self::CLIENTS))],
-        ]);
+        ])->validate();
         $client = $validated['client'];
 
         try {
             $subscription = $this->subscribeFor($request->user(), self::CLIENTS[$client]['user_agent']);
 
             return $this->downloadResponse($subscription, self::CLIENTS[$client]);
+        } catch (InterceptResponseException $exception) {
+            return $exception->getResponse();
         } catch (Throwable) {
             return Response::make('Internal Server Error', 500, [
                 'Cache-Control' => 'no-store',
@@ -56,9 +63,18 @@ class SubFetcherController
         }
     }
 
-    private function rejectUnexpectedFields(Request $request): void
+    private function rejectNonJsonInputs(Request $request): void
     {
-        $unexpected = array_diff(array_keys($request->all()), ['client']);
+        if (! $request->isJson() || $request->query->all() !== [] || $request->request->all() !== []) {
+            throw ValidationException::withMessages([
+                'client' => 'A JSON request body containing only the client field is required.',
+            ]);
+        }
+    }
+
+    private function rejectUnexpectedFields(array $body): void
+    {
+        $unexpected = array_diff(array_keys($body), ['client']);
 
         if ($unexpected !== []) {
             throw ValidationException::withMessages([
@@ -86,7 +102,9 @@ class SubFetcherController
         ];
 
         foreach (['subscription-userinfo', 'profile-update-interval'] as $header) {
-            if ($value = $subscription->headers->get($header)) {
+            $value = $subscription->headers->get($header);
+
+            if ($value !== null) {
                 $headers[$header] = $value;
             }
         }
