@@ -267,7 +267,13 @@
   }
 
   function closePanel() {
-    if (panel) panel.hidden = true;
+    if (!panel) return;
+    const code = panel.querySelector('.sf-code');
+    code.textContent = '';
+    code.hidden = true;
+    panel.querySelector('.sf-preview').textContent = '预览配置';
+    setStatus('');
+    panel.hidden = true;
   }
 
   function buildPanel() {
@@ -310,6 +316,7 @@
 
   function openPanel(trigger) {
     if (!panel) buildPanel();
+    syncCacheSession(getAccessToken());
     panel.hidden = false;
     panel.querySelector('.sf-select').focus();
     if (trigger && trigger.hasAttribute(FALLBACK_MARKER)) trigger.blur();
