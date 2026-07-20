@@ -67,6 +67,7 @@ test('launcher has download-first actions and does not ask for an arbitrary URL'
   assert.match(launcher, /cacheToken !== token \|\| getAccessToken\(\) !== token/);
   assert.match(launcher, /function copyWithExecCommand\(content\)[\s\S]*?document\.execCommand\('copy'\)/);
   assert.match(launcher, /try\s*\{\s*await navigator\.clipboard\.writeText\(content\);\s*return;\s*\}\s*catch \(_\)\s*\{[\s\S]*?copyWithExecCommand\(content\)/);
+  assert.doesNotMatch(launcher, /cacheToken\s*!==\s*token[\s\S]{0,120}return requestConfig\(client\)/);
   assert.doesNotMatch(launcher, /订阅链接.*input|url-input|原始订阅链接/);
 });
 

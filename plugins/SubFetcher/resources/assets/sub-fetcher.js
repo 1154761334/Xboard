@@ -188,7 +188,10 @@
       if (!response.ok) throw userError('配置获取失败，请稍后重试');
       const content = await response.text();
       if (!content) throw userError('暂无可用订阅');
-      if (cacheToken !== token || getAccessToken() !== token) return requestConfig(client);
+      if (cacheToken !== token || getAccessToken() !== token) {
+        syncCacheSession(getAccessToken());
+        throw userError('登录状态已变更，请重新登录后再试');
+      }
       configCache.set(client, content);
       return content;
     })();
