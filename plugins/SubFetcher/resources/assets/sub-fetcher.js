@@ -18,6 +18,7 @@
   const ACTION_TEXTS = ['复制订阅地址', '复制订阅', '一键订阅'];
   const configCache = new Map();
   const pendingRequests = new Map();
+  let cacheToken = null;
   let panel;
   let retryCount = 0;
   let retryTimer;
@@ -42,6 +43,14 @@
       // A malformed local value is treated as an expired login.
     }
     return '';
+  }
+
+  function syncCacheSession(token) {
+    if (cacheToken !== token) {
+      configCache.clear();
+      pendingRequests.clear();
+      cacheToken = token;
+    }
   }
 
   function savedClient() {
@@ -146,6 +155,7 @@
   }
 
   function selectedContent() {
+    syncCacheSession(getAccessToken());
     return configCache.get(currentClient()) || '';
   }
 
@@ -157,10 +167,11 @@
   }
 
   async function requestConfig(client) {
+    const token = getAccessToken();
+    syncCacheSession(token);
+    if (!token) throw userError('请先登录后再试');
     if (configCache.has(client)) return configCache.get(client);
     if (pendingRequests.has(client)) return pendingRequests.get(client);
-    const token = getAccessToken();
-    if (!token) throw userError('请先登录后再试');
 
     const request = (async () => {
       const response = await window.fetch(API_URL, {
@@ -177,6 +188,7 @@
       if (!response.ok) throw userError('配置获取失败，请稍后重试');
       const content = await response.text();
       if (!content) throw userError('暂无可用订阅');
+      if (cacheToken !== token || getAccessToken() !== token) return requestConfig(client);
       configCache.set(client, content);
       return content;
     })();
@@ -184,7 +196,7 @@
     try {
       return await request;
     } finally {
-      pendingRequests.delete(client);
+      if (pendingRequests.get(client) === request) pendingRequests.delete(client);
     }
   }
 
@@ -201,11 +213,7 @@
     window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
   }
 
-  async function copyConfig(content) {
-    if (navigator.clipboard && window.isSecureContext) {
-      await navigator.clipboard.writeText(content);
-      return;
-    }
+  function copyWithExecCommand(content) {
     const textarea = document.createElement('textarea');
     textarea.value = content;
     textarea.setAttribute('readonly', '');
@@ -216,6 +224,18 @@
     const copied = document.execCommand('copy');
     textarea.remove();
     if (!copied) throw userError('复制失败，请手动复制预览内容');
+  }
+
+  async function copyConfig(content) {
+    if (navigator.clipboard && window.isSecureContext) {
+      try {
+        await navigator.clipboard.writeText(content);
+        return;
+      } catch (_) {
+        // Some browsers expose the API but deny it for the current page.
+      }
+    }
+    copyWithExecCommand(content);
   }
 
   async function runAction(action) {
