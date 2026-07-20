@@ -80,3 +80,30 @@ Completed. A response received after the access token changes is discarded. The 
 ### Concerns
 
 - A user whose token changes during a request must intentionally retry after re-authenticating; stale configuration is never returned or reused.
+
+## Session Display Remediation
+
+### Status
+
+Completed. Closing the secure-download panel now clears and hides the preview, restores the preview label, and clears transient status. Opening the panel now synchronizes the current access-token session before making the panel visible, so an account change clears old in-memory configuration before it can be shown.
+
+### Commit
+
+`8b6d1a797d4357d0487e732e1c6905843d8a07bb` (`fix: clear sub-fetcher panel session display`)
+
+### Changed Files
+
+- `plugins/SubFetcher/resources/assets/sub-fetcher.js`
+- `tests/contract/sub-fetcher-contract.test.mjs`
+
+### Tests and Verification
+
+- Red: `node --test tests/contract/sub-fetcher-contract.test.mjs` failed with the new `openPanel` session-sync contract assertion.
+- Green: `node --test tests/contract/sub-fetcher-contract.test.mjs` passed (6/6).
+- `node --check plugins/SubFetcher/resources/assets/sub-fetcher.js` passed.
+- `docker compose config --quiet` passed.
+- `git diff --check` passed.
+
+### Concerns
+
+- Production deployment and authenticated browser verification remain outside this remediation scope.
