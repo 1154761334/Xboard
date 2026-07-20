@@ -36,7 +36,7 @@ test('controller validates only a JSON body and preserves controlled subscriptio
   }
   assert.match(controller, /ClientController::class/);
   assert.match(controller, /use App\\Services\\Plugin\\InterceptResponseException;/);
-  assert.match(controller, /catch \(InterceptResponseException \$exception\)\s*\{\s*return \$exception->getResponse\(\);/s);
+  assert.match(controller, /downloadResponse\(\$exception->getResponse\(\),\s*self::CLIENTS\[\$client\]\)/);
   assert.match(controller, /\$request->isJson\(\)/);
   assert.match(controller, /\$request->query->all\(\)/);
   assert.match(controller, /\$request->request->all\(\)/);

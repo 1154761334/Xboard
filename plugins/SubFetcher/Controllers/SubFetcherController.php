@@ -54,7 +54,7 @@ class SubFetcherController
 
             return $this->downloadResponse($subscription, self::CLIENTS[$client]);
         } catch (InterceptResponseException $exception) {
-            return $exception->getResponse();
+            return $this->downloadResponse($exception->getResponse(), self::CLIENTS[$client]);
         } catch (Throwable) {
             return Response::make('Internal Server Error', 500, [
                 'Cache-Control' => 'no-store',
