@@ -199,7 +199,7 @@
       const response = await window.fetch(API_URL, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: token,
           'Content-Type': 'application/json',
           Accept: 'text/plain, application/octet-stream',
         },
