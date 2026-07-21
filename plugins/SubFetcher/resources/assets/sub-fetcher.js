@@ -5,7 +5,7 @@
   window.__subFetcherLauncherLoaded = true;
 
   const API_URL = '/api/v1/plugin/sub-fetcher/config';
-  const TOKEN_KEY = 'VUE_NAIVE_ACCESS_TOKEN';
+  const TOKEN_KEY = 'Vue_Naive_access_token';
   const CLIENT_KEY = 'SUB_FETCHER_CLIENT';
   const ACTION_MARKER = 'data-sub-fetcher-action';
   const FALLBACK_MARKER = 'data-sub-fetcher-fallback';
