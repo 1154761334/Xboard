@@ -83,11 +83,17 @@
   }
 
   function findSubscriptionAction() {
-    const elements = document.querySelectorAll('button, a, [role="button"]');
-    return Array.from(elements).find((element) => {
+    // Xboard's current theme renders subscription actions as clickable divs.
+    // Prefer the smallest matching element so a surrounding card is not used.
+    const elements = document.querySelectorAll(
+      'button, a, [role="button"], [class~="cursor-pointer"]',
+    );
+    return Array.from(elements)
+      .filter((element) => {
       const text = (element.textContent || '').replace(/\s+/g, '');
       return ACTION_TEXTS.some((candidate) => text.includes(candidate));
-    });
+      })
+      .sort((left, right) => (left.textContent || '').length - (right.textContent || '').length)[0];
   }
 
   function makeAction(isFallback) {
